@@ -1,0 +1,310 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MauiCamera.Views.AttachmentsPage" xmlns:viewmodels="clr-namespace:MauiCamera.ViewModels"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             Title="AttachmentsPage">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <toolkit:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+        </ResourceDictionary>
+
+        <Style TargetType="ContentView">
+            <Setter Property="VisualStateManager.VisualStateGroups">
+                <VisualStateGroupList>
+                    <VisualStateGroup x:Name="CommonStates">
+                        <VisualState x:Name="Normal" />
+                        <VisualState x:Name="Selected" />
+                    </VisualStateGroup>
+                </VisualStateGroupList>
+            </Setter>
+        </Style>
+    </ContentPage.Resources>
+
+    <ContentPage.ToolbarItems>
+
+        <ToolbarItem x:Name="AddAttachment" Command="{Binding AddAttachmentCommand}" Order="Primary" Priority="1" Text="+">
+            <ToolbarItem.IsEnabled>
+                <Binding Converter="{StaticResource InvertedBoolConverter}" Path="IsReadOnly" Source="{RelativeSource AncestorType={x:Type viewmodels:AttachmentsPageVm}}" />
+            </ToolbarItem.IsEnabled>
+            <!--<ToolbarItem.IconImageSource>
+                <FontImageSource FontFamily="FontAwesome" Glyph="{x:Static fontawesome:FontAwesomeIcons.Plus}" Size="{StaticResource FaSize25}" Color="{AppThemeBinding Light={StaticResource DarkGray}, Dark={StaticResource White}}" />
+            </ToolbarItem.IconImageSource>-->
+        </ToolbarItem>
+
+    </ContentPage.ToolbarItems>
+
+   
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <!--  Workaround when the toolbaritems are missing when attachmentspage is navigated on audit page  -->
+            <RowDefinition Height="Auto" />
+            <!--  Info Banner  -->
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!--  Title Label  -->
+        <Label Grid.Row="0" Margin="10,10,10,0" HorizontalOptions="Start"
+               IsVisible="{Binding IsAuditPage}"
+               LineBreakMode="TailTruncation"
+               Style="{DynamicResource labelAttachmentTitleToolbar}"
+               Text="{Binding Title}"
+               VerticalOptions="Center" />
+
+        <!--  Buttons  -->
+        <StackLayout Grid.Row="0" Margin="0,10,10,0" HorizontalOptions="End"
+                     IsVisible="{Binding IsAuditPage}"
+                     Orientation="Horizontal" Spacing="10" VerticalOptions="Center">
+
+            <!--  Add New Label  -->
+            <Label HorizontalOptions="Center"
+                   IsVisible="{Binding IsAuditPage}"
+                   Style="{StaticResource labelAttachmentToolbar}"
+                   Text="Add new" VerticalOptions="Center">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding AddAttachmentCommand}" />
+                </Label.GestureRecognizers>
+            </Label>
+
+            <!--  Save Label  -->
+            <Label HorizontalOptions="Center"
+                   IsVisible="{Binding IsAuditPage}"
+                   Style="{StaticResource labelAttachmentToolbar}"
+                   Text="Save" VerticalOptions="Center">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding SaveAttachmentsCommand}" />
+                </Label.GestureRecognizers>
+            </Label>
+
+            <!--  Cancel, shows only on Create audit page  -->
+            <Label HorizontalOptions="Center"
+                   IsVisible="{Binding IsAuditPage}"
+                   Style="{StaticResource labelAttachmentToolbar}"
+                   Text="Cancel"
+                   TextColor="{StaticResource PDSDanger}"
+                   VerticalOptions="Center">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding ReturnToAuditModuleCommand}" />
+                </Label.GestureRecognizers>
+            </Label>
+        </StackLayout>
+
+        <!--  Info Banner  -->
+        <Border Grid.Row="1" Margin="10,5,10,5" BackgroundColor="#E3F2FD"
+                IsVisible="{Binding ShowDragDropInfo}"
+                Stroke="#2196F3" StrokeThickness="1">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="8" />
+            </Border.StrokeShape>
+
+            <Grid Padding="12,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!--  Info Icon  -->
+                <Border Grid.Column="0" BackgroundColor="#2196F3" HeightRequest="20" VerticalOptions="Center"
+                        WidthRequest="20">
+                    <Border.StrokeShape>
+                        <Ellipse />
+                    </Border.StrokeShape>
+                    <Label FontAttributes="Bold" FontSize="12" HorizontalOptions="Center" Text="i"
+                           TextColor="White" VerticalOptions="Center" />
+                </Border>
+
+                <!--  Info Text  -->
+                <Label Grid.Column="1" Margin="12,0,0,0" FontSize="14" LineBreakMode="WordWrap"
+                       Text="Select attachment(s) to be added on the current step record." TextColor="#1976D2" VerticalOptions="Center" />
+
+                <!--  Close Button (Optional)  -->
+                <Button Grid.Column="2" Padding="8,0" BackgroundColor="Transparent"
+                        Command="{Binding DismissInfoBannerCommand}"
+                        FontSize="16" Text="✕" TextColor="#1976D2" VerticalOptions="Center" />
+            </Grid>
+        </Border>
+
+        <CollectionView x:Name="AttachmentCollectionView"
+                        Grid.Row="2"
+                        Grid.ColumnSpan="{OnIdiom Tablet=1,
+                                                  Default=2}"
+                        Margin="10,5,10,0" EmptyView="No images found."
+                        ItemsSource="{Binding AttachedImages}"
+                        ItemsUpdatingScrollMode="KeepItemsInView"
+                        SelectedItems="{Binding CurrentSelectedItems}"
+                       
+                        SelectionMode="{Binding CurrentSelectionMode}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="viewmodels:AttachedImageViewModel">
+                    <ContentView BackgroundColor="White">
+                        <Grid Margin="0,15,15,0">
+                            <Border Margin="10" Style="{StaticResource tableSectionBorder}" VerticalOptions="Start">
+                                <Grid x:Name="myGrid" Padding="0" ColumnSpacing="5" RowSpacing="5">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="30" />
+                                        <RowDefinition Height="*" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="70" />
+                                        <ColumnDefinition Width="80" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <HorizontalStackLayout Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Padding="20,0,0,0"
+                                                           HorizontalOptions="Start" Spacing="20">
+                                        <Button Padding="0"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:AttachmentsPageVm}}, Path=EditAttachmentCommand}"
+                                                CommandParameter="{Binding}"
+                                                IsEnabled="{Binding Model.IsEditButtonEnabled}"
+                                                Style="{DynamicResource BtnTransparent}">
+                                            <!--<Button.ImageSource>
+                                                <FontImageSource FontFamily="FontAwesome" Glyph="{x:Static fontawesome:FontAwesomeIcons.Pen}" Size="{StaticResource FaSize20}" Color="{AppThemeBinding Dark={StaticResource Accent}, Light={StaticResource Primary}}" />
+                                            </Button.ImageSource>-->
+                                        </Button>
+
+                                        <Button Padding="0"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:AttachmentsPageVm}}, Path=DeleteAttachmentCommand}"
+                                                CommandParameter="{Binding}"
+                                                IsEnabled="{Binding Model.IsDeleteButtonEnabled}"
+                                                Style="{DynamicResource BtnTransparent}">
+                                            <!--<Button.ImageSource>
+                                                <FontImageSource FontFamily="FontAwesome" Glyph="{x:Static fontawesome:FontAwesomeIcons.Trash}" Size="{StaticResource FaSize20}" Color="{StaticResource PDSDanger}" />
+                                            </Button.ImageSource>-->
+                                        </Button>
+                                    </HorizontalStackLayout>
+
+                                    <!--  Images  -->
+                                    <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Style="{DynamicResource AttachmentBorder}">
+                                        <Image Aspect="AspectFit" HorizontalOptions="Fill" IsVisible="{Binding ProcessingDone}" Source="{Binding ImageSource, Mode=OneWay}">
+                                            <Image.GestureRecognizers>
+                                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:AttachmentsPageVm}}, Path=ImageTappedCommand}" CommandParameter="{Binding}" />
+                                            </Image.GestureRecognizers>
+                                        </Image>
+                                        <Border.IsVisible>
+                                            <MultiBinding Converter="{StaticResource AllTrueConverter}">
+                                                <Binding Path="ProcessingDone" />
+                                                <Binding Converter="{StaticResource InvertedBoolConverter}" Path="Model.IsPDF" />
+                                            </MultiBinding>
+                                        </Border.IsVisible>
+                                    </Border>
+
+                                    <!--  PDF  -->
+                                    <!--<Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Style="{DynamicResource AttachmentBorder}">
+                                        <Image Aspect="AspectFit" HorizontalOptions="Fill">
+                                            <Image.Source>
+                                                <FontImageSource FontFamily="FontAwesome" Glyph="{x:Static fontawesome:FontAwesomeIcons.FilePdf}" Size="100" Color="{StaticResource FaIcon}" />
+                                            </Image.Source>
+                                            <Image.GestureRecognizers>
+                                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:AttachmentsPageVm}}, Path=ViewPDFTappedCommand}" CommandParameter="{Binding}" />
+                                            </Image.GestureRecognizers>
+                                        </Image>
+                                        <Border.IsVisible>
+                                            <MultiBinding Converter="{StaticResource AllTrueConverter}">
+                                                <Binding Path="ProcessingDone" />
+                                                <Binding Path="Model.IsPDF" />
+                                            </MultiBinding>
+                                        </Border.IsVisible>
+                                    </Border>-->
+
+                                    <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+                                            IsVisible="{Binding ProcessingDone, Converter={StaticResource InvertedBoolConverter}}"
+                                            Style="{DynamicResource AttachmentBorder}">
+                                        <ActivityIndicator HorizontalOptions="Center" IsRunning="True"
+                                                           Scale="{OnPlatform Android=1.5,
+                                                                              iOS=1.6}"
+                                                           VerticalOptions="Center"
+                                                           Color="{AppThemeBinding Light={StaticResource PDSBlue},
+                                                                                   Dark={StaticResource Accent}}" />
+                                    </Border>
+
+                                    <Grid Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" HorizontalOptions="{OnIdiom Tablet=CenterAndExpand, Phone=StartAndExpand}">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="50" />
+                                            <RowDefinition Height="50" />
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <Label Grid.Row="0" Grid.Column="0" HorizontalOptions="Start"
+                                               Style="{DynamicResource labelHeader}"
+                                               Text="Name:" />
+
+                                        <Label Grid.Row="0" Grid.Column="1" HorizontalOptions="Start" LineBreakMode="WordWrap"
+                                               Style="{DynamicResource FileLabel}"
+                                               Text="{Binding Model.FileName}"
+                                               VerticalOptions="Center" />
+
+                                        <Label Grid.Row="1" Grid.Column="0" HorizontalOptions="Start"
+                                               Style="{DynamicResource labelHeader}"
+                                               Text="Created:  " />
+
+                                        <Label Grid.Row="1" Grid.Column="1" HorizontalOptions="Start" LineBreakMode="TailTruncation"
+                                               Style="{DynamicResource FileLabel}"
+                                               VerticalOptions="Center">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <!--<Span Text="📅 " FontSize="Medium"/>  Emoji-->
+                                                    <Span Text="{Binding Model.CreatedDateTime, StringFormat='{  0:MMM dd yyyy, HH:mm tt}'}" />
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+
+                                        <StackLayout Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" HorizontalOptions="Center"
+                                                     IsVisible="{Binding Model.IsReadOnly}"
+                                                     Orientation="Horizontal" Spacing="10" VerticalOptions="Center">
+                                            <Image Aspect="AspectFit" VerticalOptions="Center">
+                                                <!--<Image.Source>
+                                                    <FontImageSource FontFamily="FontAwesome" Glyph="{x:Static fontawesome:FontAwesomeIcons.Paperclip}" Size="{StaticResource FaSize}" Color="{StaticResource FaIcon}" />
+                                                </Image.Source>-->
+                                            </Image>
+                                            <Label Style="{DynamicResource labelHeader}" Text="Read Only" VerticalOptions="Center" />
+                                        </StackLayout>
+                                    </Grid>
+                                </Grid>
+                            </Border>
+
+                            <!--  Selection Check Icon - positioned to overlap border  -->
+                            <Border x:Name="checkIcon"
+                                    Margin="0,-15,-10,0" BackgroundColor="#4CAF50" HeightRequest="30" HorizontalOptions="End"
+                                    IsVisible="False" VerticalOptions="Start" WidthRequest="30">
+                                <Border.StrokeShape>
+                                    <Ellipse />
+                                </Border.StrokeShape>
+                                <Image HorizontalOptions="Center" VerticalOptions="Center">
+                                    <!--<Image.Source>
+                                        <FontImageSource FontFamily="FontAwesome" Glyph="{x:Static fontawesome:FontAwesomeIcons.Check}" Size="16" Color="White" />
+                                    </Image.Source>-->
+                                </Image>
+                            </Border>
+                        </Grid>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroupList>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal">
+                                        <VisualState.Setters>
+                                            <Setter TargetName="checkIcon" Property="IsVisible" Value="False" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Selected">
+                                        <VisualState.Setters>
+                                            <Setter TargetName="checkIcon" Property="IsVisible" Value="True" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateGroupList>
+                        </VisualStateManager.VisualStateGroups>
+                    </ContentView>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+</ContentPage>

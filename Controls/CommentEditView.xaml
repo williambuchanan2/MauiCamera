@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MauiCamera.Views.CommentEditView"
+              xmlns:models="clr-namespace:MauiCamera"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+      >
+
+   
+
+	<VerticalStackLayout HorizontalOptions="FillAndExpand" VerticalOptions="StartAndExpand" Margin="0,15,0,0">
+
+		<!--<Line HeightRequest="1" Margin="0" HorizontalOptions="StartAndExpand" VerticalOptions="StartAndExpand" BackgroundColor="{StaticResource Gray400}" />-->
+
+		<StackLayout Orientation="Horizontal" HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand" Margin="5">
+			<Border StrokeThickness="1" StrokeShape="RoundRectangle 10,10,10,10" Padding="10" HorizontalOptions="FillAndExpand"
+					VerticalOptions="StartAndExpand"
+					Background="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackground}}">
+				<Editor Text="{Binding NewComment}" Placeholder="Comment" AutoSize="TextChanges" HorizontalOptions="FillAndExpand"
+						VerticalOptions="Fill" Keyboard="Chat">
+					<Editor.Behaviors>
+						<toolkit:EventToCommandBehavior Command="{Binding Comment_TextChangedCommand}"
+								EventArgsConverter="{StaticResource TextChangedConverter}" EventName="TextChanged" />
+					</Editor.Behaviors>
+
+				</Editor>
+			</Border>
+
+			<ImageButton Margin="10" Padding="10" HorizontalOptions="End" VerticalOptions="Center" Aspect="Center"
+					>
+				<ImageButton.Source>
+					<FontImageSource FontFamily="FontAwesome" Size="30"
+							 />
+				</ImageButton.Source>
+			</ImageButton>
+
+		</StackLayout>
+	</VerticalStackLayout>
+
+</ContentView>
