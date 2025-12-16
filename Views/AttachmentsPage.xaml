@@ -186,12 +186,12 @@
                                                 <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:AttachmentsPageVm}}, Path=ImageTappedCommand}" CommandParameter="{Binding}" />
                                             </Image.GestureRecognizers>
                                         </Image>
-                                        <Border.IsVisible>
+                                        <!--<Border.IsVisible>
                                             <MultiBinding Converter="{StaticResource AllTrueConverter}">
                                                 <Binding Path="ProcessingDone" />
                                                 <Binding Converter="{StaticResource InvertedBoolConverter}" Path="Model.IsPDF" />
                                             </MultiBinding>
-                                        </Border.IsVisible>
+                                        </Border.IsVisible>-->
                                     </Border>
 
                                     <!--  PDF  -->
@@ -219,8 +219,9 @@
                                                            Scale="{OnPlatform Android=1.5,
                                                                               iOS=1.6}"
                                                            VerticalOptions="Center"
-                                                           Color="{AppThemeBinding Light={StaticResource PDSBlue},
-                                                                                   Dark={StaticResource Accent}}" />
+                                                           />
+                                        <!--Color="{AppThemeBinding Light={StaticResource PDSBlue},
+                        Dark={StaticResource Accent}}"-->
                                     </Border>
 
                                     <Grid Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" HorizontalOptions="{OnIdiom Tablet=CenterAndExpand, Phone=StartAndExpand}">

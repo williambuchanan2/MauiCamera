@@ -14,6 +14,7 @@ using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -970,14 +971,15 @@ namespace MauiCamera.ViewModels
                     .ToList();
 
                 //TODO
-                //AttachedImages.Replace(list);
+                //AttachedImages.ReplaceRange(list);
+                AttachedImages.Add(list[list.Count-1]);
             }
             catch (Exception ex)
             {
                 // Global.MauiAppExceptionHandler.Instance.HandleException(ex);
             }
         }
-
+        
         [RelayCommand]
         private async Task ReturnToAuditModule()
         {
@@ -1182,7 +1184,7 @@ namespace MauiCamera.ViewModels
         {
             try
             {
-                loadingImg = true;
+                LoadingImg = true;
                 //App.DisableLoadState = true;
 
                 var ch = CameraHelper.Instance;
@@ -1196,19 +1198,19 @@ namespace MauiCamera.ViewModels
                 {
                     if (!string.IsNullOrEmpty(ch.OperationInfo))
                     {
-                        //InfoPrompts.Instance.ShowLongToast(ch.OperationInfo);
+                        InfoPrompts.ShowLongToast(ch.OperationInfo);
                     }
                 }
             }
             catch (Exception ex)
             {
-                // MauiAppExceptionHandler.Instance.HandleException(ex);
+               //MauiAppExceptionHandler.Instance.HandleException(ex);
                 ShowErrorMessage($"Camera error: {ex.Message}");
             }
             finally
             {
-                //App.DisableLoadState = false;
-                loadingImg = false;
+               // App.DisableLoadState = false;
+                LoadingImg = false;
             }
         }
 

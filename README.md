@@ -1,2 +1,2 @@
-# MauiNavigation
-Maui navigation issue
+# MauiCamera
+Maui camera issue
