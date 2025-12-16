@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Channels;
@@ -227,23 +228,30 @@ namespace MauiCamera.Helpers
 
         private async Task<IImage> Preprocess(CameraResultProcessingOptions options)
         {
+            Debug.WriteLine($"{DateTime.Now.ToString("hh:mm:ss")}: ******* Preprocess 1");
             using (SKManagedStream inputStream = new(options.SourceImage.AsStream()))
             {
+                Debug.WriteLine($"{DateTime.Now.ToString("hh:mm:ss")}: ******* Preprocess 2");
                 using (var codec = SKCodec.Create(inputStream))
                 {
+                    Debug.WriteLine($"{DateTime.Now.ToString("hh:mm:ss")}: ******* Preprocess 3");
                     using (var bitmap = SKBitmap.Decode(codec))
                     {
 
+                        Debug.WriteLine($"{DateTime.Now.ToString("hh:mm:ss")}: ******* Preprocess 4");
                         using (MemoryStream ms = new())
                         {
+                            Debug.WriteLine($"{DateTime.Now.ToString("hh:mm:ss")}: ******* Preprocess 5");
                             SKImage.FromBitmap(bitmap.AutoOrient(options.Rotation))
                                 .Encode(SKEncodedImageFormat.Png, options.Quality)
                                 .SaveTo(ms);
 
+                            Debug.WriteLine($"{DateTime.Now.ToString("hh:mm:ss")}: ******* Preprocess 6");
                             await ms.FlushAsync();
 
                             ms.Position = (int)SeekOrigin.Begin;
 
+                            Debug.WriteLine($"{DateTime.Now.ToString("hh:mm:ss")}: ******* Preprocess 7");
                             return PlatformImage.FromStream(ms);
                         }
                     }
@@ -258,21 +266,29 @@ namespace MauiCamera.Helpers
 
             try
             {
+                Debug.WriteLine($"{DateTime.Now.ToString("hh:mm:ss")}: ******* ProcessImage");
                 image = await Preprocess(options);
+                Debug.WriteLine($"{DateTime.Now.ToString("hh:mm:ss")}: ******* ProcessImage 2");
 
                 // Create a copy for thumbnail if needed
                 if (!string.IsNullOrWhiteSpace(options.ThumbnailPath))
                 {
+                    Debug.WriteLine($"{DateTime.Now.ToString("hh:mm:ss")}: ******* ProcessImage 3");
                     var imageBytes = await image.AsBytesAsync();
+                    Debug.WriteLine($"{DateTime.Now.ToString("hh:mm:ss")}: ******* ProcessImage 4");
                     using var stream = new MemoryStream(imageBytes);
                     thumbnailImage = PlatformImage.FromStream(stream);
+                    Debug.WriteLine($"{DateTime.Now.ToString("hh:mm:ss")}: ******* ProcessImage 5");
                 }
 
+                Debug.WriteLine($"{DateTime.Now.ToString("hh:mm:ss")}: ******* ProcessImage 6");
                 var attachmentTask = CreateAttachment(image, options);
+                Debug.WriteLine($"{DateTime.Now.ToString("hh:mm:ss")}: ******* ProcessImage 7");
                 var thumbnailTask = thumbnailImage != null ? CreateThumbnail(thumbnailImage, options) : Task.FromResult<CameraResultProcessingMessage?>(null);
 
                 CameraResultProcessingMessage? attachmentResult = null;
                 CameraResultProcessingMessage? thumbnailResult = null;
+                Debug.WriteLine($"{DateTime.Now.ToString("hh:mm:ss")}: ******* ProcessImage 8");
 
                 try
                 {
@@ -292,6 +308,7 @@ namespace MauiCamera.Helpers
                     //Logger.LogError(ex);
                 }
 
+                Debug.WriteLine($"{DateTime.Now.ToString("hh:mm:ss")}: ******* ProcessImage Done - sending message");
                 if (attachmentResult != null)
                 {
                     //Logger.LogInformation($"Sending attachment result for processing ID: {options.ProcessingId}");

@@ -6,7 +6,9 @@
              Title="AttachmentsPage">
 
     <ContentPage.Resources>
+        <x:String x:Key="ImgGot_back_Tab">dotnet_bot.svg</x:String>
         <ResourceDictionary>
+            <toolkit:ByteArrayToImageSourceConverter x:Key="ByteArrayToImage" />
             <toolkit:InvertedBoolConverter x:Key="InvertedBoolConverter" />
         </ResourceDictionary>
 
@@ -156,73 +158,20 @@
                                         <ColumnDefinition Width="80" />
                                     </Grid.ColumnDefinitions>
 
-                                    <HorizontalStackLayout Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Padding="20,0,0,0"
-                                                           HorizontalOptions="Start" Spacing="20">
-                                        <Button Padding="0"
-                                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:AttachmentsPageVm}}, Path=EditAttachmentCommand}"
-                                                CommandParameter="{Binding}"
-                                                IsEnabled="{Binding Model.IsEditButtonEnabled}"
-                                                Style="{DynamicResource BtnTransparent}">
-                                            <!--<Button.ImageSource>
-                                                <FontImageSource FontFamily="FontAwesome" Glyph="{x:Static fontawesome:FontAwesomeIcons.Pen}" Size="{StaticResource FaSize20}" Color="{AppThemeBinding Dark={StaticResource Accent}, Light={StaticResource Primary}}" />
-                                            </Button.ImageSource>-->
-                                        </Button>
-
-                                        <Button Padding="0"
-                                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:AttachmentsPageVm}}, Path=DeleteAttachmentCommand}"
-                                                CommandParameter="{Binding}"
-                                                IsEnabled="{Binding Model.IsDeleteButtonEnabled}"
-                                                Style="{DynamicResource BtnTransparent}">
-                                            <!--<Button.ImageSource>
-                                                <FontImageSource FontFamily="FontAwesome" Glyph="{x:Static fontawesome:FontAwesomeIcons.Trash}" Size="{StaticResource FaSize20}" Color="{StaticResource PDSDanger}" />
-                                            </Button.ImageSource>-->
-                                        </Button>
-                                    </HorizontalStackLayout>
+                                   
 
                                     <!--  Images  -->
                                     <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Style="{DynamicResource AttachmentBorder}">
-                                        <Image Aspect="AspectFit" HorizontalOptions="Fill" IsVisible="{Binding ProcessingDone}" Source="{Binding ImageSource, Mode=OneWay}">
-                                            <Image.GestureRecognizers>
-                                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:AttachmentsPageVm}}, Path=ImageTappedCommand}" CommandParameter="{Binding}" />
-                                            </Image.GestureRecognizers>
+                                        <Image Aspect="AspectFit" HorizontalOptions="Fill" IsVisible="true" 
+                                               Source="{Binding Model.AttachmentInByteArray, Mode=OneWay,  TargetNullValue={StaticResource ImgGot_back_Tab}, Converter={StaticResource ByteArrayToImage}}"
+                                               >
                                         </Image>
-                                        <!--<Border.IsVisible>
-                                            <MultiBinding Converter="{StaticResource AllTrueConverter}">
-                                                <Binding Path="ProcessingDone" />
-                                                <Binding Converter="{StaticResource InvertedBoolConverter}" Path="Model.IsPDF" />
-                                            </MultiBinding>
-                                        </Border.IsVisible>-->
                                     </Border>
 
-                                    <!--  PDF  -->
-                                    <!--<Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Style="{DynamicResource AttachmentBorder}">
-                                        <Image Aspect="AspectFit" HorizontalOptions="Fill">
-                                            <Image.Source>
-                                                <FontImageSource FontFamily="FontAwesome" Glyph="{x:Static fontawesome:FontAwesomeIcons.FilePdf}" Size="100" Color="{StaticResource FaIcon}" />
-                                            </Image.Source>
-                                            <Image.GestureRecognizers>
-                                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:AttachmentsPageVm}}, Path=ViewPDFTappedCommand}" CommandParameter="{Binding}" />
-                                            </Image.GestureRecognizers>
-                                        </Image>
-                                        <Border.IsVisible>
-                                            <MultiBinding Converter="{StaticResource AllTrueConverter}">
-                                                <Binding Path="ProcessingDone" />
-                                                <Binding Path="Model.IsPDF" />
-                                            </MultiBinding>
-                                        </Border.IsVisible>
-                                    </Border>-->
+                                    <!--Source="{Binding Model.ImageSource}"
+                                    Source="{Binding Model.AttachmentInByteArray, Mode=OneWay,  TargetNullValue={StaticResource ImgGot_back_Tab}, Converter={StaticResource ByteArrayToImage}}">-->
 
-                                    <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
-                                            IsVisible="{Binding ProcessingDone, Converter={StaticResource InvertedBoolConverter}}"
-                                            Style="{DynamicResource AttachmentBorder}">
-                                        <ActivityIndicator HorizontalOptions="Center" IsRunning="True"
-                                                           Scale="{OnPlatform Android=1.5,
-                                                                              iOS=1.6}"
-                                                           VerticalOptions="Center"
-                                                           />
-                                        <!--Color="{AppThemeBinding Light={StaticResource PDSBlue},
-                        Dark={StaticResource Accent}}"-->
-                                    </Border>
+
 
                                     <Grid Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" HorizontalOptions="{OnIdiom Tablet=CenterAndExpand, Phone=StartAndExpand}">
                                         <Grid.RowDefinitions>
