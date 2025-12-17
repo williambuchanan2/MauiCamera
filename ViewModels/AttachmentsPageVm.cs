@@ -189,7 +189,7 @@ namespace MauiCamera.ViewModels
 
         private void ProcessCameraResults(MediaHelper ch)
         {
-            int count = ch.CameraResults.Count;
+            int count = ch.MediaResults.Count;
 
             if (count > 0)
             {
@@ -203,7 +203,7 @@ namespace MauiCamera.ViewModels
                 // InfoPrompts.Instance.ShowLongToast(message);
 
 
-                ch.CameraResults.ForEach(result =>
+                ch.MediaResults.ForEach(result =>
                 {
                     var attachedImage = new AttachedImage
                     {
