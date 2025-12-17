@@ -70,13 +70,13 @@ namespace MauiCamera.ViewModels
         public AttachmentsPageVm()
         {
             _attachedImages = new ObservableCollection<AttachedImageViewModel>();
-            if (!WeakReferenceMessenger.Default.IsRegistered<CameraResultProcessingMessage>(this))
-            {
-                WeakReferenceMessenger.Default.Register<CameraResultProcessingMessage>(this, (_, message) =>
-                {
-                    OnCameraResultProcessingMessage(message);
-                });
-            }
+            //if (!WeakReferenceMessenger.Default.IsRegistered<CameraResultProcessingMessage>(this))
+            //{
+            //    WeakReferenceMessenger.Default.Register<CameraResultProcessingMessage>(this, (_, message) =>
+            //    {
+            //        OnCameraResultProcessingMessage(message);
+            //    });
+            //}
         }
 
         [RelayCommand]
@@ -165,29 +165,29 @@ namespace MauiCamera.ViewModels
 
         }
 
-        public void OnCameraResultProcessingMessage(CameraResultProcessingMessage message)
-        {
-            var match = _attachedImagesList.FirstOrDefault(o => o.ProcessingId == message.Options.ProcessingId);
+        //public void OnCameraResultProcessingMessage(CameraResultProcessingMessage message)
+        //{
+        //    var match = _attachedImagesList.FirstOrDefault(o => o.ProcessingId == message.Options.ProcessingId);
 
-            if (match is not null)
-            {
-                if (message.ThumbnailBytes is not null)
-                {
-                    match.ThumbnailInByteArray = message.ThumbnailBytes;
-                }
+        //    if (match is not null)
+        //    {
+        //        if (message.ThumbnailBytes is not null)
+        //        {
+        //            match.ThumbnailInByteArray = message.ThumbnailBytes;
+        //        }
 
-                if (message.AttachmentBytes is not null)
-                {
-                    match.AttachmentInByteArray = message.AttachmentBytes;
-                    match.PhotoHeight = message.Height.Value;
-                    match.PhotoWidth = message.Width.Value;
+        //        if (message.AttachmentBytes is not null)
+        //        {
+        //            match.AttachmentInByteArray = message.AttachmentBytes;
+        //            match.PhotoHeight = message.Height.Value;
+        //            match.PhotoWidth = message.Width.Value;
 
-                    RefreshAttachedImages();
-                }
-            }
-        }
+        //            RefreshAttachedImages();
+        //        }
+        //    }
+        //}
 
-        private void ProcessCameraResults(CameraHelper ch)
+        private void ProcessCameraResults(MediaHelper ch)
         {
             int count = ch.CameraResults.Count;
 
@@ -282,9 +282,9 @@ namespace MauiCamera.ViewModels
 
         private async Task ShowCamera()
         {
-            Global.CameraHelper.Instance = new Global.CameraHelper();
+            Global.MediaHelper.Instance = new Global.MediaHelper();
 
-            await CaptureImage(async (ch) => await ch.TakePhoto(string.Empty, MaxImagePixelSize));
+            await CaptureImage(async (ch) => await ch.TakePhoto(string.Empty));
 
         }
 
@@ -295,18 +295,19 @@ namespace MauiCamera.ViewModels
 
         private async Task ShowPhotoGallery()
         {
-            await CaptureImage(async (ch) => await ch.SelectPhotoFromGallery(string.Empty, 1, MaxImagePixelSize));
+            Global.MediaHelper.Instance = new Global.MediaHelper();
+            await CaptureImage(async (ch) => await ch.SelectPhotoFromGallery(string.Empty, 10));
 
         }
 
-        private async Task CaptureImage(Func<CameraHelper, Task<bool>> captureAction)
+        private async Task CaptureImage(Func<MediaHelper, Task<bool>> captureAction)
         {
             try
             {
                 LoadingImg = true;
                 //App.DisableLoadState = true;
 
-                var ch = CameraHelper.Instance;
+                var ch = MediaHelper.Instance;
                 var success = await captureAction(ch);
 
                 if (success)

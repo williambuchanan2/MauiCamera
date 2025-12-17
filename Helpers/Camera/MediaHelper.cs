@@ -1,8 +1,6 @@
-﻿using Java.Util.Streams;
-using MauiCamera.Helpers;
+﻿using MauiCamera.Helpers;
 using MetadataExtractor;
 using MetadataExtractor.Formats.Exif;
-using Microsoft.Maui;
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
@@ -17,12 +15,12 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using static MetadataExtractor.Formats.Bmp.BmpHeaderDirectory;
+//using static System.Net.WebRequestMethods;
 using IImage = Microsoft.Maui.Graphics.IImage;
 
 namespace Global
 {
-    public sealed class CameraHelper
+    public sealed class MediaHelper
     {
         private const string LEFT_SIDE_BOTTOM_ROTATE_270 = "Left side, bottom (Rotate 270 CW)";
 
@@ -46,27 +44,16 @@ namespace Global
 
         private bool ShouldSavePhotoToDeviceGallery => Preferences.Get(KEYNAME_SAVE_PHOTOS_TO_GALLERY, true);
 
-        public CameraHelper()//CameraResultProcessingChannel channel, ImageUtils imageUtils)//, InfoPrompts infoPrompts)
+        public MediaHelper()//CameraResultProcessingChannel channel, ImageUtils imageUtils)//, InfoPrompts infoPrompts)
         {
             //_channel = new CameraResultProcessingChannel(new ImageUtils());
             _imageUtils = new ImageUtils();
             //_infoPrompts = infoPrompts;
         }
 
-        public enum CameraHelperProcessingMode
-        {
-            /// <summary>
-            /// Defer image conversion to a background process
-            /// </summary>
-            Deferred,
-            /// <summary>
-            /// Convert images immediately
-            /// </summary>
-            Immediate
-        }
 
-       // [ResolveFromContainer(typeof(CameraHelper))]
-        public static CameraHelper Instance { get; set; }
+        // [ResolveFromContainer(typeof(CameraHelper))]
+        public static MediaHelper Instance { get; set; }
 
         /// <summary>
         /// Indicates that a photo was successfully taken or selected. 
@@ -74,11 +61,10 @@ namespace Global
         /// </summary>
         public bool ActionSucceeded { get; set; }
 
-        public List<CameraResult> CameraResults { get; set; }
+        public List<MediaResult> CameraResults { get; set; }
 
         public bool IncludeThumbnail { get; set; } = false;
 
-        public CameraHelperProcessingMode Mode { get; private set; } = CameraHelperProcessingMode.Deferred;
 
 
         public string OperationInfo { get; set; }
@@ -90,12 +76,14 @@ namespace Global
             writer.Write(data);
         }
 
-       
 
-        public async Task<bool> ChoosePhotoFromMediaPicker(string title, int selectionLimit, int? downsize)
+
+        public async Task<bool> ChoosePhotoFromMediaPicker(string title, int selectionLimit)
         {
             bool result = false;
-            CameraResults = new List<CameraResult>();
+            CameraResults = new List<MediaResult>();
+            if (string.IsNullOrEmpty(title))
+                title = "Select Image";
 
             try
             {
@@ -104,49 +92,54 @@ namespace Global
                 try
                 {
                     cts.CancelAfter(TimeSpan.FromMinutes(5));
-
-                    var options = new MediaPickerOptions
-                    {
-                        Title = title,
-                        SelectionLimit = selectionLimit,
-                        PreserveMetaData = false,
-                        RotateImage = false,
-                    };
-
+                    var options = GetDefaultMediaPickerOptions(title);
                     var fileResult = await MediaPicker.PickPhotosAsync(options);
 
                     foreach (var file in fileResult)
                     {
-
-                        Stream imageStream = await file.OpenReadAsync();
-                        IImage newImage = PlatformImage.FromStream(imageStream);
-                        string fileNameWithExtension = file.FileName;
-                        string contentType = "jpg";
-                        string[] split = fileNameWithExtension.Split('.');
-
-                        if (split.Length > 1)
+                        if (file != null)
                         {
-                            contentType = split[1];
-                        }
-
-                        fileNameWithExtension = file.FileName;
-                        string thumbnailFileNameWithExtension = split.Length > 1 ? $"{split[0]}_thumbnail.{split[1]}" : "thumbnail_" + file.FileName;
-
-                        string newFn = Path.Combine(FileSystem.Current.CacheDirectory, fileNameWithExtension);
-                        string thumbnailFn = Path.Combine(FileSystem.Current.CacheDirectory, thumbnailFileNameWithExtension);
-
-                        int rotation = 0;// await GenerateRotation(file);
-                        DateTime? originalPhotoDateTime = await ExtractPhotoTimestamp(file);
-
-                        if (newImage != null)
-                        {
-                            CameraResult cameraResult = await GenerateCameraResultAsync(newImage, rotation, downsize, newFn, thumbnailFn, contentType, fileNameWithExtension, originalPhotoDateTime);
-                            if (cameraResult != null)
-                            {
-                                CameraResults.Add(cameraResult);
-                            }
+                            MediaResult camResult = await LoadPhotoAsync(file, false);
+                            CameraResults.Add(camResult);
                             result = true;
                         }
+                        else
+                        {
+                            await ShowToastMessage("TextResource.ImageCameraUnknownError");
+                            return false;
+                        }
+
+
+
+                        //Stream imageStream = await file.OpenReadAsync();
+                        //IImage newImage = PlatformImage.FromStream(imageStream);
+                        //string fileNameWithExtension = file.FileName;
+                        //string contentType = "jpg";
+                        //string[] split = fileNameWithExtension.Split('.');
+
+                        //if (split.Length > 1)
+                        //{
+                        //    contentType = split[1];
+                        //}
+
+                        //fileNameWithExtension = file.FileName;
+                        //string thumbnailFileNameWithExtension = split.Length > 1 ? $"{split[0]}_thumbnail.{split[1]}" : "thumbnail_" + file.FileName;
+
+                        //string newFn = Path.Combine(FileSystem.Current.CacheDirectory, fileNameWithExtension);
+                        //string thumbnailFn = Path.Combine(FileSystem.Current.CacheDirectory, thumbnailFileNameWithExtension);
+
+                        //int rotation = 0;// await GenerateRotation(file);
+                        //DateTime? originalPhotoDateTime = await ExtractPhotoTimestamp(file);
+
+                        //if (newImage != null)
+                        //{
+                        //    MediaResult cameraResult = await GenerateCameraResultAsync(newImage, rotation, downsize, newFn, thumbnailFn, contentType, fileNameWithExtension, originalPhotoDateTime);
+                        //    if (cameraResult != null)
+                        //    {
+                        //        CameraResults.Add(cameraResult);
+                        //    }
+                        //    result = true;
+                        //}
                     }
 
                     if (!result)
@@ -185,10 +178,10 @@ namespace Global
                         IImage newImage = PlatformImage.FromStream(encodedData.AsStream());
                         byte[] resultBytes = newImage.AsBytes();
 
-                        CameraResults = new List<CameraResult>();
+                        CameraResults = new List<MediaResult>();
                         //CameraResult cameraResult =  GenerateCameraResult(newImage, Rotation, downsize, newFn, thumbnailFn, contentType, fileNameWithExtension);
 
-                        CameraResult camResult = new CameraResult()
+                        MediaResult camResult = new MediaResult()
                         {
                             PhotoImageBytes = resultBytes,
                             PhotoImageData = Convert.ToBase64String(resultBytes),
@@ -213,57 +206,18 @@ namespace Global
         /// <summary>
         /// Select a photo from the image gallery
         /// </summary>
-        /// <returns></returns>
-        public async Task<bool> SelectPhotoFromGallery()
+        /// <returns></returns>      
+
+        public Task<bool> SelectPhotoFromGallery(string title, int selectionLimit)
         {
-                return await ChoosePhotoFromMediaPicker(string.Empty, 1, null);
+            return ChoosePhotoFromMediaPicker(title, selectionLimit);
         }
 
-        public async Task<bool> SelectPhotoFromGallery(string title)
-        {
-                return await ChoosePhotoFromMediaPicker(title, 1, null);
-        }
 
-        public async Task<bool> SelectPhotoFromGallery(int downsize)
-        {
-                return await ChoosePhotoFromMediaPicker(string.Empty, 1, downsize);
-        }
 
-        public Task<bool> SelectPhotoFromGallery(string title, int selectionLimit, int? downsize)
-        {
-                return ChoosePhotoFromMediaPicker(title, selectionLimit, downsize);
-        }
 
-        public void SetProcessingMode(CameraHelperProcessingMode mode)
-        {
-            Mode = mode;
-        }
 
-        /// <summary>
-        /// Gives the user the option to take or select a photo
-        /// </summary>
-        /// <returns></returns>
-        public async Task<bool> TakeOrSelectPhoto()
-        {
-            return await TakeOrSelectPhoto(string.Empty, string.Empty, null);
-        }
-
-        public async Task<bool> TakeOrSelectPhoto(string fileName)
-        {
-            return await TakeOrSelectPhoto(string.Empty, fileName, null);
-        }
-
-        public async Task<bool> TakeOrSelectPhoto(int downSize)
-        {
-            return await TakeOrSelectPhoto(string.Empty, string.Empty, downSize);
-        }
-
-        public async Task<bool> TakeOrSelectPhoto(string title, int downSize)
-        {
-            return await TakeOrSelectPhoto(title, string.Empty, downSize);
-        }
-
-        public async Task<bool> TakeOrSelectPhoto(string title, string fileName, int? downSize)
+        public async Task<bool> TakeOrSelectPhoto(string title)
         {
             try
             {
@@ -288,9 +242,9 @@ namespace Global
                         bool actionResult = false;
 
                         if (take)
-                            actionResult = await TakePhoto(fileName, downSize);
+                            actionResult = await TakePhoto(title);
                         else
-                            actionResult = await SelectPhotoFromGallery(title, 1, downSize);
+                            actionResult = await SelectPhotoFromGallery(title, 0);
 
                         ActionSucceeded = actionResult;
                         result = actionResult;
@@ -311,36 +265,14 @@ namespace Global
             }
         }
 
-        /// <summary>
-        /// Take a photo with the camera
-        /// </summary>
-        /// <returns></returns>
-        public async Task<bool> TakePhoto()
-        {
-                return await TakePhotoFromMediaPicker(string.Empty, null);
-        }
 
-        public async Task<bool> TakePhoto(string fileName)
-        {
-                return await TakePhotoFromMediaPicker(fileName, null);
-        }
 
-        public async Task<bool> TakePhoto(int downsize)
-        {
-                return await TakePhotoFromMediaPicker(null, downsize);
-        }
-
-        public async Task<bool> TakePhoto(string fileName, int? downsize = null)
-        {
-                return await TakePhotoFromMediaPicker(fileName, downsize);
-        }
-
-       
-
-        public async Task<bool> TakePhotoFromMediaPicker(string fileName, int? downsize = null)
+        public async Task<bool> TakePhoto(string title)
         {
             bool result = false;
-            CameraResults = new List<CameraResult>();
+            CameraResults = new List<MediaResult>();
+            if (string.IsNullOrEmpty(title))
+                title = "Take Photo";
 
             try
             {
@@ -351,104 +283,21 @@ namespace Global
                     if (status != PermissionStatus.Granted)
                         return false;
 
+                    var options = GetDefaultMediaPickerOptions(title);
 
-                    IImage image = null;
-
-                    //this else will be removed once MediaGallery will be fix for lower than android os 33
-                    var options = new MediaPickerOptions
-                    {
-                        SelectionLimit = 0,
-                        PreserveMetaData = true, Title="Take a photo",
-                        RotateImage = true,
-                        CompressionQuality=100,
-                        MaximumWidth=1000,
-                        MaximumHeight=1000
-                    };
                     FileResult file = await MediaPicker.Default.CapturePhotoAsync(options);
+
                     if (file != null)
                     {
-                        string fileNameWithExtension = file.FileName;
-                        string fileNameTobeSavedToDevice = file.FileName + "_Taken From PDSX";
-                        string[] split = fileNameWithExtension.Split('.');
-                        string thumbnailFileNameWithExtension = split.Length > 1 ? $"{split[0]}_thumbnail.{split[1]}" : "thumbnail_" + file.FileName;
-                        string contentType = "jpg";
-
-                        if (split.Length > 1)
-                        {
-                            contentType = split[1];
-                        }
-
-                        string newFn = Path.Combine(FileSystem.Current.CacheDirectory, fileNameWithExtension);
-                        string thumbnailFn = Path.Combine(FileSystem.Current.CacheDirectory, thumbnailFileNameWithExtension);
-                        ImageSource imageSource;
-
-                        //int rotation = await GenerateRotation(file);
-                        byte[] imageData;
-
-                       CameraResult camResult= await LoadPhotoAsync(file);
-
-                        //using (Stream imageStream = await file.OpenReadAsync())
-                        //{
-                        //    imageSource = ImageSource.FromStream(() => imageStream);
-                        //    image = PlatformImage.FromStream(imageStream);
-                        //    imageData = image.AsBytes();
-                        //    //using (FileStream localFileStream = File.OpenWrite(newFn))
-                        //    //{
-                        //    //    await imageStream.CopyToAsync(localFileStream);
-                        //    //}
-                        //}
-
-                        //CameraResult camResult = new()
-                        //{
-                        //    PhotoImageBytes = imageData,
-                        //    PhotoImageData = Convert.ToBase64String(imageData),
-                        //    PhotoImageSource = imageSource,
-                        //    //ThumbBytes = thumbnailBytes,
-                        //    PhotoFileName = fileNameWithExtension,
-                        //    PhotoFileSize = imageData.Length,
-                        //    PhotoFileType = contentType,
-                        //    PhotoHeight = (int)float.Round(image.Height),// image.Height,
-                        //    PhotoWidth = (int)float.Round(image.Width),// compression.Width,
-                        //    //Rotation = rotation,
-                        //    PhotoFullPath = Path.GetDirectoryName(newFn),
-                        //    OriginalPhotoDateTime = DateTime.Now
-                        //};
+                        MediaResult camResult = await LoadPhotoAsync(file, ShouldSavePhotoToDeviceGallery);
                         CameraResults.Add(camResult);
                         result = true;
-
-                        // Save device
-                        //if (image != null && ShouldSavePhotoToDeviceGallery)
-                        //{
-                        //    try
-                        //    {
-                        //        await SavePhotoToGallery(image.AsBytes(), fileNameTobeSavedToDevice);
-                        //    }
-                        //    catch (Exception ex)
-                        //    {
-                        //        //Global.AppLogger.Instance.LogError(ex);
-                        //        // soft fail
-                        //    }
-                        //}
-
-                        //if (image != null)
-                        //{
-                        //    CameraResult cameraResult = await GenerateCameraResultAsync(image, rotation, downsize, newFn, thumbnailFn, contentType, fileNameWithExtension);
-
-                        //    if (cameraResult != null)
-                        //    {
-                        //        CameraResults.Add(cameraResult);
-                        //    }
-
-                        //    result = true;
-
-                        //}
-                        //else
-                        //{
-                        //    await ShowToastMessage("TextResource.ImageCameraUnknownError");
-                        //}
                     }
                     else
+                    {
+                        await ShowToastMessage("TextResource.ImageCameraUnknownError");
                         return false;
+                    }
                 }
             }
             catch (FeatureNotSupportedException)
@@ -472,79 +321,59 @@ namespace Global
             return result;
         }
 
-        async Task<CameraResult> LoadPhotoAsync(FileResult photo)
+        private MediaPickerOptions GetDefaultMediaPickerOptions(string title)
         {
-            string imageDimensions = "";
+            return new MediaPickerOptions
+            {
+                SelectionLimit = 0,
+                PreserveMetaData = true,
+                Title = title,
+                RotateImage = false,
+                CompressionQuality = 50,
+                MaximumWidth = 700,
+                MaximumHeight = 700
+            };
+        }
+
+        async Task<MediaResult> LoadPhotoAsync(FileResult photo, bool saveToGallery)
+        {
+            if (photo is null)
+                return null;
+
             ImageSource PhotoSource;
 
-            if (photo is null)
+            using (var stream = await photo.OpenReadAsync())
             {
-                PhotoSource = null;
-                imageDimensions = "";
-                return null;
-            }
-
-            var stream = await photo.OpenReadAsync();
-            {
-               int rotation=await  GenerateRotation(stream);
-                //int h = 0;
-                //int w = 0;
-
-                // Get image dimensions
-                //try
-                //{
-                //    var imageInfo = GetImageDimensions(stream);
-                //    h=imageInfo.Height;
-                //    w=imageInfo.Width;
-                //    imageDimensions = $"{imageInfo.Width} × {imageInfo.Height} • {stream.Length:N0} bytes";
-                //    stream.Position = 0; // Reset stream position
-                //}
-                //catch
-                //{
-                //    imageDimensions = $"Unknown dimensions • {stream.Length:N0} bytes";
-                //}
-
+                int rotation = await GenerateRotation(stream);
                 PhotoSource = ImageSource.FromStream(() => stream);
-                //long ImageByteLength = stream.Length;
-
-                //ShowMultiplePhotos = false;
-                //ShowPhoto = true;
-
-                //using (Stream imageStream = await file.OpenReadAsync())
-                //{
-                //    imageSource = ImageSource.FromStream(() => imageStream);
-                //    image = PlatformImage.FromStream(imageStream);
-                //    imageData = image.AsBytes();
-                //    //using (FileStream localFileStream = File.OpenWrite(newFn))
-                //    //{
-                //    //    await imageStream.CopyToAsync(localFileStream);
-                //    //}
-                //}
-
 
                 using (var image = PlatformImage.FromStream(stream))
                 {
-                    var rotImage=CreateOrientedImage(image, rotation).Image;
+                    var rotImage = CreateOrientedImage(image, rotation).Image;
                     var imageData = rotImage.AsBytes();
 
-                    //var imageInfo = GetImageDimensions(stream);
                     int h = (int)rotImage.Height;
                     int w = (int)rotImage.Width;
 
                     string fileNameWithExtension = photo.FileName;
-                    string fileNameTobeSavedToDevice = photo.FileName + "_Taken From PDSX";
+                    string fileNameTobeSavedToDevice = "PDSX_" + photo.FileName;
                     string[] split = fileNameWithExtension.Split('.');
                     string thumbnailFileNameWithExtension = split.Length > 1 ? $"{split[0]}_thumbnail.{split[1]}" : "thumbnail_" + photo.FileName;
                     string contentType = "jpg";
 
                     if (split.Length > 1)
-                    {
                         contentType = split[1];
-                    }
+
                     string newFn = Path.Combine(FileSystem.Current.CacheDirectory, fileNameWithExtension);
                     string thumbnailFn = Path.Combine(FileSystem.Current.CacheDirectory, thumbnailFileNameWithExtension);
 
-                    CameraResult camResult = new()
+                    // Save to cache
+                    bool saveToCache = false; // May be required at some point in time
+                    if (saveToCache)
+                        File.WriteAllBytes(newFn, imageData);
+
+
+                    MediaResult camResult = new()
                     {
                         PhotoImageBytes = imageData,
                         PhotoImageData = Convert.ToBase64String(imageData),
@@ -555,20 +384,36 @@ namespace Global
                         PhotoFileType = contentType,
                         PhotoHeight = h,
                         PhotoWidth = w,
-                        //Rotation = rotation,
-                        PhotoFullPath = Path.GetDirectoryName(newFn),
+                        Rotation = rotation,
+                        PhotoFullPath = saveToCache ? Path.GetDirectoryName(newFn) : fileNameWithExtension,
                         OriginalPhotoDateTime = DateTime.Now
                     };
+
+
+                    if (image != null && saveToGallery)
+                    {
+                        try
+                        {
+                            await SavePhotoToGallery(image.AsBytes(), fileNameTobeSavedToDevice);
+                        }
+                        catch (Exception ex)
+                        {
+                            //Global.AppLogger.Instance.LogError(ex);
+                            // soft fail
+                        }
+                    }
+
                     return camResult;
                 }
             }
         }
+
         internal static (IImage Image, byte[] Bytes) CreateOrientedImage(IImage source, int rotation)
         {
             using var managedStream = new SKManagedStream(source.AsStream());
             using var codec = SKCodec.Create(managedStream);
             using var bitmap = SKBitmap.Decode(codec);
-            SKBitmap oriented = CameraHelper.AutoOrient(bitmap, rotation);
+            SKBitmap oriented = MediaHelper.AutoOrient(bitmap, rotation);
 
             try
             {
@@ -587,23 +432,6 @@ namespace Global
             }
         }
 
-        (int Width, int Height) GetImageDimensions2(Stream imageStream)
-        {
-            try
-            {
-                // Reset position to beginning of stream
-                imageStream.Position = 0;
-
-                // Use MAUI.Graphics to load the image and get dimensions
-                using var image = PlatformImage.FromStream(imageStream);
-                return ((int)image.Width, (int)image.Height);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Failed to extract image dimensions: {ex.Message}");
-                return (0, 0);
-            }
-        }
 
         #region private methods
 
@@ -616,7 +444,7 @@ namespace Global
         {
             try
             {
-                var status = await Permissions.RequestAsync<Permissions.Photos>();
+                var status = await Permissions.RequestAsync<SaveMediaPermission>();
 
                 if (status != PermissionStatus.Granted)
                 {
@@ -632,13 +460,15 @@ namespace Global
                     await MediaGallery.SaveAsync(MediaFileType.Image, fileStream, fileName);
                 }
 
-               // Global.AppLogger.Instance.LogInformation($"Photo saved to gallery: {fileName}");
+                // Global.AppLogger.Instance.LogInformation($"Photo saved to gallery: {fileName}");
                 await ShowToastMessage("Photo saved to gallery");
 
-                if (File.Exists(tempPath))
+                try
                 {
-                    File.Delete(tempPath);
+                    if (File.Exists(tempPath))
+                        File.Delete(tempPath);
                 }
+                catch { }
             }
             catch (Exception ex)
             {
@@ -682,7 +512,7 @@ namespace Global
             }
         }
 
-        private Task<CameraResult> GenerateCameraResultAsync(IImage newImage, int rotation, int? downsize, string newFn, string thumbnailFn, string photoFileType, string fileNameWithExtension, DateTime? originalPhotoDateTime = null)
+        private Task<MediaResult> GenerateCameraResultAsync(IImage newImage, int rotation, int? downsize, string newFn, string thumbnailFn, string photoFileType, string fileNameWithExtension, DateTime? originalPhotoDateTime = null)
         {
             //if (Mode == CameraHelperProcessingMode.Deferred)
             //{
@@ -693,9 +523,9 @@ namespace Global
             //return GenerateCameraResultImmediate(newImage, rotation, downsize, newFn, thumbnailFn, photoFileType, fileNameWithExtension, originalPhotoDateTime);
         }
 
-        private async Task<CameraResult> GenerateResult(IImage newImage, int rotation, int? downsize, string newFn, string thumbnailFn, string photoFileType, string fileNameWithExtension, DateTime? originalPhotoDateTime)
+        private async Task<MediaResult> GenerateResult(IImage newImage, int rotation, int? downsize, string newFn, string thumbnailFn, string photoFileType, string fileNameWithExtension, DateTime? originalPhotoDateTime)
         {
-            CameraResult camResult = new()
+            MediaResult camResult = new()
             {
                 //PhotoImageBytes = newImage.AsBytes(),
                 ////PhotoImageData = Convert.ToBase64String(compression.Bytes),
@@ -714,7 +544,7 @@ namespace Global
             return camResult;
         }
 
-        private async Task<CameraResult> GenerateCameraResultDeferred(IImage newImage, int rotation, int? downsize, string newFn, string thumbnailFn, string photoFileType, string fileNameWithExtension, DateTime? originalPhotoDateTime)
+        private async Task<MediaResult> GenerateCameraResultDeferred(IImage newImage, int rotation, int? downsize, string newFn, string thumbnailFn, string photoFileType, string fileNameWithExtension, DateTime? originalPhotoDateTime)
         {
             CameraResultProcessingOptions options = new()
             {
@@ -731,7 +561,7 @@ namespace Global
             //await _channel.WriteAsync(options);
 
             // return an interim result to the client
-            CameraResult value = new()
+            MediaResult value = new()
             {
                 PhotoFileName = options.PathWithExtension,
                 PhotoFileSize = 0,
@@ -757,7 +587,7 @@ namespace Global
             return value;
         }
 
-        private async Task<CameraResult> GenerateCameraResultImmediate(IImage newImage, int rotation, int? downsize, string newFn, string thumbnailFn, string contentType, string fileNameWithExtension, DateTime? originalPhotoDateTime = null)
+        private async Task<MediaResult> GenerateCameraResultImmediate(IImage newImage, int rotation, int? downsize, string newFn, string thumbnailFn, string contentType, string fileNameWithExtension, DateTime? originalPhotoDateTime = null)
         {
 #if IOS
             await ShowToastMessage("TextResource.ImageWait");
@@ -790,7 +620,7 @@ namespace Global
 
                 await File.WriteAllBytesAsync(newFn, compression.Bytes);
 
-                CameraResult camResult = new()
+                MediaResult camResult = new()
                 {
                     PhotoImageBytes = compression.Bytes,
                     PhotoImageData = Convert.ToBase64String(compression.Bytes),
@@ -886,7 +716,7 @@ namespace Global
 
         private async Task ShowLongToast(string errorMesssage)
         {
-             InfoPrompts.ShowLongToast(errorMesssage);
+            InfoPrompts.ShowLongToast(errorMesssage);
         }
 
         private async Task ShowToastMessage(string errorMessage)

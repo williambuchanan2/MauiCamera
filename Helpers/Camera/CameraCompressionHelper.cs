@@ -21,7 +21,7 @@ namespace Global
             using var managedStream = new SKManagedStream(source.AsStream());
             using var codec = SKCodec.Create(managedStream);
             using var bitmap = SKBitmap.Decode(codec);
-            SKBitmap oriented = CameraHelper.AutoOrient(bitmap, rotation);
+            SKBitmap oriented = MediaHelper.AutoOrient(bitmap, rotation);
 
             try
             {

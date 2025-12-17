@@ -5,7 +5,7 @@ using System;
 
 namespace MauiCamera.Helpers
 {
-    public sealed class CameraResult : ImageProcessingStatus
+    public sealed class MediaResult : ImageProcessingStatus
     {
         public ImageFormat Format { get; set; }
         public string PhotoFileName { get; set; }
